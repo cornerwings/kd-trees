@@ -38,7 +38,7 @@ void randu(float *data, int m, int n){
 
 /**********************************************************
 	
-	Normal Distribution
+	Standard Normal Distribution
  	INPUT: Pointer to hold the distribution data
 		   Size of Distribution (m,n)
 	OUTPUT: Matrix filled with normal distribution
@@ -88,6 +88,34 @@ void randn(float *data, int m, int n){
 
 /**********************************************************
 	
+	Normal Distribution
+ 	INPUT: Pointer to hold the distribution data
+		   Size of Distribution (m,n)
+		   mean mu, variance var
+	OUTPUT: Matrix filled with normal distribution
+
+	Algorithm: Uses Standard normal distribution to generate
+			   an arbitrary normal distribution with mean mu
+			   and variance var
+
+/**********************************************************/
+void randn_mv(float *data, int m, int n, float mu, float var){
+
+	randn(data, m, n);
+
+	float sd = sqrt(var);
+
+	int i,j;
+	for(i=0; i<m; i++){
+		for(j=0; j<n; j++){
+			data[i*n+j] = mu + sd * data[i*n+j];
+		}
+	}
+
+}
+
+/**********************************************************
+	
 	Generate P matrix
  	INPUT: Pointer to hold the data
 		   Size of Distribution (k,d)
@@ -110,7 +138,7 @@ void generatep(float *data, int n, int k, int d, float e, int p){
 	float *rdata = (float*) malloc(k*d*sizeof(float));
 	randu(rdata, k, d);
 
-	randn(data, k, d);
+	randn_mv(data, k, d, 0, 1/q);
 
 	int i,j;
 	for(i=0; i<k; i++){
