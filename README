@@ -4,4 +4,4 @@ Adding dimension reduction based on Fast Johnson Lindenstrauss transform
 (Everything is assumed to be Column Major order - can be easily changed)
 
 Completed a rough sequential version of FJLT.
-Currently using standar normal distribution which needs to be changed.
+Csada:urrently using standar normal distribution which needs to be changed.
