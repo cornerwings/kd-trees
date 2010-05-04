@@ -2,7 +2,7 @@
 #include <math.h>
 
 /**********************************************************
- * sample sort (returns rank)
+ * sample sort (returns rank) 
 /**********************************************************/
 int * sampleSort(float * a, int *index, int n) {
 	int i, j, k, p, start, end, avg, split, * core, * coreCount, * newIndex;
