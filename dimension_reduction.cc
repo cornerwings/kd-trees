@@ -19,7 +19,7 @@ int count_bits(unsigned number){
 	
 	Uniform Distribution
  	INPUT: Pointer to hold the distribution data
-		   Size of Distribution (m,n)
+		    Size of Distribution (m,n)
 	OUTPUT: Matrix filled with uniform distribution
 
 	Algorithm: Nothing Special
@@ -40,12 +40,12 @@ void randu(float *data, int m, int n){
 	
 	Standard Normal Distribution
  	INPUT: Pointer to hold the distribution data
-		   Size of Distribution (m,n)
+		    Size of Distribution (m,n)
 	OUTPUT: Matrix filled with normal distribution
 
 	Algorithm: Generate two random numbers R1 and R2 from
 		an uniform distribution, then two random normally
-		distibuted values can be as follows
+		distributed values can be as follows
 
 		sqrt(-2*log(R1)) cos(2*pi*R2)
 		sqrt(-2*log(R1)) sin(2*pi*R2)
@@ -90,13 +90,13 @@ void randn(float *data, int m, int n){
 	
 	Normal Distribution
  	INPUT: Pointer to hold the distribution data
-		Size of Distribution (m,n)
-		mean mu, variance var
+		    Size of Distribution (m,n)
+		    mean mu, variance var
 	OUTPUT: Matrix filled with normal distribution
 
-	Algorithm: Uses Standard normal distribution to generate
-		an arbitrary normal distribution with mean mu
-		and variance var
+	Algorithm: Uses Standard normal distribution to 
+                generate an arbitrary normal distribution with 
+                mean mu and variance var
 
 /**********************************************************/
 void randn_mv(float *data, int m, int n, float mu, float var){
@@ -118,13 +118,13 @@ void randn_mv(float *data, int m, int n, float mu, float var){
 	
 	Generate P matrix
  	INPUT: Pointer to hold the data
-		Size of Distribution (k,d)
-		Epislon e, Embedding type p
-		Total points n
+		    Size of Distribution (k,d)
+		    Epislon e, Embedding type p
+		    Total points n
 	OUTPUT: Resultant P matrix
 
 	Algorithm: P_ij = N(0,1/q) with probability q
-			= 0	with probability 1-q
+			      = 0	with probability 1-q
 
 		q = min( ( e^p-2 * (log n)^p /d ), 1 )
 		p belongs to {1,2}
@@ -154,11 +154,11 @@ void generatep(float *data, int n, int k, int d, float e, int p){
 	
 	Generate H matrix
  	INPUT: Pointer to hold the data
-		Size of Distribution (d,d)
+		    Size of Distribution (d,d)
 	OUTPUT: Resultant H matrix
 
 	Algorithm: P_ij = d^-0.5 8 (-1)^<i-1,j-1>
-		<i,j> is the dot product of i,j in binary
+	<i,j> is the dot product of i,j in binary
 
 /**********************************************************/
 void generateh(float *data, int d){
@@ -179,7 +179,7 @@ void generateh(float *data, int d){
 	
 	Generate D matrix
  	INPUT: Pointer to hold the data
-		Size of Distribution (d,d)
+		    Size of Distribution (d,d)
 	OUTPUT: Resultant D matrix
 
 	Algorithm: D_ii = {-1,1} with probability 0.5
@@ -200,7 +200,7 @@ void generated(float *data, int d){
 	
 	Generate FJLT Transform matrix
  	INPUT: Pointer to hold the data
-		Size of Distribution (k,d)
+		    Size of Distribution (k,d)
 	OUTPUT: Resultant Transform matrix
 
 	Algorithm: FJLT = PHD
