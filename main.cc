@@ -4,7 +4,7 @@
 #include <math.h>
 #include <cblas.h>
 #include <fftw3.h>
-#include <omp.h>
+#include <sys/time.h>
 #include "fjlt.h"
 #include "io.h"
 
@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
 
 	//write_data((char*)"sample.dat", 16, 8);
 
-	int n = 1000;
-	int d = 256;
+	int n = 10000;
+	int d = 1024;
 
 	float *data;
 	data = generate_data(d, n);
@@ -26,11 +26,17 @@ int main(int argc, char *argv[]) {
 	/*
 	 * reducing to this dimension
 	 */
-	int k = 150;
+	int k = 128;
+
+    struct timeval start, stop;
 
 	float *result;
+    gettimeofday(&start, 0);
 	result = FJLT(data, n, k, d);
+    gettimeofday(&stop, 0);
     //result = FJLT_fftw(data, n, k, d);
+
+    printf("Time taken for FJLT: %f\n", (stop.tv_sec -  start.tv_sec) + 1.0e-6 * (stop.tv_usec  - start.tv_usec));
 
 	/*
 	 * verify if it works

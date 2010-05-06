@@ -31,6 +31,7 @@ int count_bits(unsigned number) {
 void randu(float *data, int m, int n) {
 
 	int i, j;
+    #pragma omp parallel for private(i,j)
 	for (i = 0; i < m; i++) {
 		for (j = 0; j < n; j++) {
 			data[i * n + j] = (float) rand() / RAND_MAX;
@@ -108,6 +109,7 @@ void randn_mv(float *data, int m, int n, float mu, float var) {
 	float sd = sqrt(var);
 
 	int i, j;
+    #pragma omp parallel for private(i,j)
 	for (i = 0; i < m; i++) {
 		for (j = 0; j < n; j++) {
 			data[i * n + j] = mu + sd * data[i * n + j];
@@ -187,6 +189,7 @@ void inv_randn(float *data, int m, int n, float mu, float var){
 	float sd = sqrt(var);
 
 	int i, j;
+    #pragma omp parallel for private(i,j)
 	for (i = 0; i < m; i++) {
 		for (j = 0; j < n; j++) {
 			data[i * n + j] = mu + sd * moroinv_cnd((float)rand()/RAND_MAX);
@@ -227,6 +230,7 @@ float* generatep(int n, int k, int d, float e, int p) {
 	randu(rdata, k, d);
 
 	int i, j;
+    #pragma omp parallel for private(i,j)
 	for (i = 0; i < k; i++) {
 		for (j = 0; j < d; j++) {
 			data[i * d + j] *= (rdata[i * d + j] < q);
@@ -265,7 +269,9 @@ float* generatep(int n, int k, int d, float e, int p) {
  *
  *  Not really used because this takes O(d^2) operations
  */
-void generateh(float *data, int d) {
+float* generateh(int d) {
+
+    float *data = (float*) malloc(d*d*sizeof(float));
 
 	float consmul = 1 / sqrt(d);
 
@@ -276,6 +282,8 @@ void generateh(float *data, int d) {
 			data[i * d + j] = consmul * ((currpow & (currpow - 1)) == 0 ? 1 : -1);
 		}
 	}
+
+    return data;
 
 }
 
@@ -294,6 +302,7 @@ float* generated(int d) {
 	float *data = (float*) malloc(d * sizeof(float));
 
 	int i;
+    #pragma omp parallel for private(i)
 	for (i = 0; i < d; i++) {
 		data[i] = ((float) rand() / RAND_MAX) < 0.5 ? 1 : -1;
 	}
@@ -345,9 +354,10 @@ float* FJLT(float *input, int n, int k, int d) {
 		int a, b, c;
 
 
-        #pragma omp parallel for private(a)
-		for (a = 0; a < d; a++)
-			point[a] *= (/*sqrtd * */ D[a]);
+        #pragma omp parallel for
+		for (a = 0; a < d; a++){
+            point[a] *= (/*sqrtd * */ D[a]);
+        }
 
 		/*
 		 * Do Fast Walsh transform on the point
@@ -372,6 +382,10 @@ float* FJLT(float *input, int n, int k, int d) {
 
 		curr++;
 	}
+
+    free(D);
+    free(P);
+    free(data);
 
 	return result;
 
