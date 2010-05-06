@@ -1,3 +1,5 @@
+Parallel sort:
+
 To compile on Hogwarts:
 
 1.  run this line in the shell
@@ -16,3 +18,15 @@ To compile on Hogwarts:
            This will generate a random array of floats with 2^21 elements
            and sort it in parallel using 4 threads.  The input nor the
            output will be printed to the screen.
+
+
+Fast Johnson-Lindenstrauss Transform:
+
+FJLT implementation complete
+
+To compile:
+
+1. g++ main.cc fjlt.cc io.cc -o fjlt -fopenmp -lfftw3 -lblas -lm
+
+2. As of now executable doesnt take any inputs.
+   Just creates some data randomly and does the projections on those
