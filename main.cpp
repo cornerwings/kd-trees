@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 	//write_data((char*)"sample.dat", 16, 8);
 
 	int n = 10000;
-	int d = 1024;
+	int d = 256;
 
 	float *data;
 	data = generate_data(d, n);
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * reducing to this dimension
 	 */
-	int k = 128;
+	int k = 150;
 
     struct timeval start, stop;
 

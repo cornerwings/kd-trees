@@ -30,10 +30,9 @@ int count_bits(unsigned number) {
  */
 void randu(float *data, int m, int n) {
 
-	int i, j;
-    #pragma omp parallel for private(i,j)
-	for (i = 0; i < m; i++) {
-		for (j = 0; j < n; j++) {
+    #pragma omp parallel for shared(data) 
+	for (int i = 0; i < m; i++) {
+		for (int j = 0; j < n; j++) {
 			data[i * n + j] = (float) rand() / RAND_MAX;
 		}
 	}
@@ -108,10 +107,9 @@ void randn_mv(float *data, int m, int n, float mu, float var) {
 
 	float sd = sqrt(var);
 
-	int i, j;
-    #pragma omp parallel for private(i,j)
-	for (i = 0; i < m; i++) {
-		for (j = 0; j < n; j++) {
+    #pragma omp parallel for shared(data)
+	for (int i = 0; i < m; i++) {
+		for (int j = 0; j < n; j++) {
 			data[i * n + j] = mu + sd * data[i * n + j];
 		}
 	}
@@ -188,10 +186,9 @@ void inv_randn(float *data, int m, int n, float mu, float var){
 
 	float sd = sqrt(var);
 
-	int i, j;
-    #pragma omp parallel for private(i,j)
-	for (i = 0; i < m; i++) {
-		for (j = 0; j < n; j++) {
+    #pragma omp parallel for shared(data)
+	for (int i = 0; i < m; i++) {
+		for (int j = 0; j < n; j++) {
 			data[i * n + j] = mu + sd * moroinv_cnd((float)rand()/RAND_MAX);
 		}
 	}
@@ -229,27 +226,12 @@ float* generatep(int n, int k, int d, float e, int p) {
     inv_randn(data, k, d, 0, 1/q);
 	randu(rdata, k, d);
 
-	int i, j;
-    #pragma omp parallel for private(i,j)
-	for (i = 0; i < k; i++) {
-		for (j = 0; j < d; j++) {
+    #pragma omp parallel for shared(data, rdata)
+	for (int i = 0; i < k; i++) {
+		for (int j = 0; j < d; j++) {
 			data[i * d + j] *= (rdata[i * d + j] < q);
 		}
 	}
-
-    /*
-     * Not so random P
-     */
-    /*
-	for (i = 0; i < k; i++) {
-		for (j = 0; j < d; j++) {
-            if(j<k && j==i)
-                data[i*d+j] = 1;
-            else
-                data[i*d+j] = 0;
-		}
-	}
-    */
 
 	free(rdata);
 
@@ -275,9 +257,9 @@ float* generateh(int d) {
 
 	float consmul = 1 / sqrt(d);
 
-	int i, j;
-	for (i = 0; i < d; i++) {
-		for (j = 0; j < d; j++) {
+    #pragma omp parallel for shared(data)
+	for (int i = 0; i < d; i++) {
+		for (int j = 0; j < d; j++) {
 			int currpow = count_bits(i & j);
 			data[i * d + j] = consmul * ((currpow & (currpow - 1)) == 0 ? 1 : -1);
 		}
@@ -301,9 +283,8 @@ float* generated(int d) {
 
 	float *data = (float*) malloc(d * sizeof(float));
 
-	int i;
-    #pragma omp parallel for private(i)
-	for (i = 0; i < d; i++) {
+    #pragma omp parallel for shared(data)
+	for (int i = 0; i < d; i++) {
 		data[i] = ((float) rand() / RAND_MAX) < 0.5 ? 1 : -1;
 	}
 
@@ -347,14 +328,13 @@ float* FJLT(float *input, int n, int k, int d) {
 	 */
 	int curr = 0;
 
-	while (curr < n) {
+    #pragma omp parallel for private(curr) shared(data,result)
+	for(curr=0; curr < n; curr++) {
 		float *point = data + d * curr;
 		float *output = result + k * curr;
 
 		int a, b, c;
 
-
-        #pragma omp parallel for
 		for (a = 0; a < d; a++){
             point[a] *= (/*sqrtd * */ D[a]);
         }
@@ -364,7 +344,6 @@ float* FJLT(float *input, int n, int k, int d) {
 		 */
 		int l2 = log2(d);
 		for (a = 0; a < l2; a++) {
-            #pragma omp parallel for private(b,c)
 			for (b = 0; b < (1 << l2); b += 1 << (a + 1)) {
 				for (c = 0; c < (1 << a); c++) {
 					float temp = point[b + c];
@@ -372,7 +351,6 @@ float* FJLT(float *input, int n, int k, int d) {
 					point[b + c + (1 << a)] = temp - point[b + c + (1 << a)];
 				}
 			}
-            #pragma omp barrier
 		}
 
 		/*
@@ -380,7 +358,6 @@ float* FJLT(float *input, int n, int k, int d) {
 		 */
 	    cblas_sgemv(CblasRowMajor, CblasNoTrans, k, d, (float)1/d, P, d, point, 1, 0.0, output, 1);
 
-		curr++;
 	}
 
     free(D);
@@ -436,8 +413,8 @@ float* FJLT_fftw(float *data, int n, int k, int d) {
 	 * Process each point at once i.e each column of data
 	 */
 	int curr = 0;
-
-	while (curr < n) {
+    #pragma omp parallel for private(curr) shared(data,result)
+	for(curr=0; curr<n; curr++) {
 
 		float *x = data + d * curr;
 		float *y = result + k * curr;
@@ -448,7 +425,6 @@ float* FJLT_fftw(float *data, int n, int k, int d) {
 	    int i;
 
 	    //First multiply X by D while simultaneosuly pack it in x
-        #pragma omp parallel for
 	    for (i = 0; i < d; i++) {
 		    in[i][0] = /*sqrtd * */ D[i] * x[i];
 	    }
@@ -458,14 +434,11 @@ float* FJLT_fftw(float *data, int n, int k, int d) {
 
         //cast from fftw_complex to float
         //TODO - Dont know any other way.. going with the normal copy
-         #pragma omp parallel for
 	    for (i = 0; i < d; i++) {
 		    hdx[i] = out[i][0];
 	    }
 
 	    cblas_sgemv(CblasRowMajor, CblasNoTrans, k, d, (float)1/d, P, d, hdx, 1, 0.0, y, 1);
-
-        curr++;
     }
 
     return result;
