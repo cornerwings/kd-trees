@@ -21,10 +21,10 @@ public:
 		return (x / m);
 	}
 
-	/* returns a uniformly distributed between
-	   the preset limits low and high */
+	/* returns a time spent at cash register
+	 * uniformly distributed between 1 and 2 minutes */
 	int nextPos() {
-		return (int)floor(diff * next() + low);
+		return floor(diff * next() + low);
 	}
 
 	/* this constructor sets all values used in Lehmer's algorithm

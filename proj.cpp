@@ -2,124 +2,74 @@
 #include <stdlib.h>
 #include <time.h>
 #include <omp.h>
-#include "proj.h"
-#include "myRNG.h"
-#include "parSort.cpp")
 #include <math.h>
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include "proj.h"
+#include "parSort.cpp"
+#include "rerank.cpp"
+#include "build_tree.cpp"
+#include "myRNG.cpp"
 
+using namespace std;
 int main(int argc, char *argv[]) {
-	int i;
-	double timeS1, timeS2, timeP1, timeP2, wtick;
-	wtick = omp_get_wtick();
-	int n = pow(2, atoi(argv[1]));
-	//printf("n=%d; size=%f MB\n", n, (float)((n*sizeof(float))/1000000.0f));
+	if(argc != 3) {
+		printf("Usage: ./a.out n D\n");
+		exit(-1);
+	}
+	int n = (int) pow(2,atoi(argv[1]));
+	D = (int) pow(2,atoi(argv[2]));
+	//printf("Size = %d, dimension = %d threads = %d\n", atoi(argv[1]), atoi(argv[2]), omp_get_max_threads());
 	myRNG rng;
-
-	/** SEQUENTIAL SORT *************************************************/
-	// initialize random array
-	float *a = (float *)malloc(sizeof(float)*n);
-	int *index = (int *)malloc(sizeof(int)*n);
-	int *rank;
 	rng.resetSeed(10215);
-	for(i=0; i<n; i++) {
-		*(a + i) = rng.next();
-		*(index + i) = i;
-	}
-	// if option is selected, print starting array
-	if(atoi(argv[2]) == 1) {
-		printf("[%f, ", *(a + 0));
-		for(i=1; i<(n-1); i++) {
-			printf("%f, ", *(a + i));
+	double t1, t2, t3, t4;
+	double* Data[D];
+	//Generate random data
+	for(int i = 0; i < D; i++) {
+		double* t = (double*) malloc(n*sizeof(double));
+		//printf("Generating data for %d dimension\n",i);
+		for(int j = 0; j < n; j++) {
+			*(t + j) = rng.next();
 		}
-		printf("%f]\n", *(a + n - 1));
+		Data[i] = t;
 	}
-
-	// sort array (sequentially)
-	timeS1 = omp_get_wtime();
-	seqShellSort(a, index, n);
-	timeS2 = omp_get_wtime();
-	// check array
-	i=0;
-	while(*(a + i) <= *(a + i + 1) && i<n) {
-		i++;
-	}
-	if(i==(n-1)) {
-		//printf("Seq :: Array sorted SUCCESSFULLY in %f seconds.\n", (timeS2-timeS1));
-	} else {
-		printf("Seq :: Array is NOT sorted.  See index %d.\n", i);
-	}
-	// if option is selected, print ending array
-	if(atoi(argv[3]) == 1) {
-		printf("[%f, ", *(a + 0));
-		for(i=1; i<(n-1); i++) {
-			printf("%f, ", *(a + i));
+	t1 = omp_get_wtime();
+	//Create index vectors for each dimension and do rank sort
+	int* I[D];
+	//Sorting ranks in all dimensions
+	for(int i = 0; i < D; i++) {
+		int* index = (int*) malloc(n *sizeof(int));
+		I[i] = index;
+		for(int j=0; j < n; j++) {
+			*(I[i] + j) = j;
 		}
-		printf("%f]\n", *(a + n - 1));
+		if(!index)  { printf("Index is null\n"); exit(-1); }
+		if(!Data[i]) { printf("Data pointer null\n"); exit(-1); }
+		//printf("Entering ranksort for %d dimension\n",i);
+		seqShellSort((float*)Data[i],I[i],n);
+		//printf("Finished ranksort for %d dimension\n",i);
 	}
-
-
-	/** SAMPLE SORT ******************************************************/
-	// reinitialize random array
-	free(a);
-	free(index);
-	a = (float *)malloc(sizeof(float)*n);
-	index = (int *)malloc(sizeof(int)*n);
-	rng.resetSeed(10215);
-	for(i=0; i<n; i++) {
-		*(a + i) = rng.next();
-		*(index + i) = i;
-	}
-	// if option is selected, print starting array
-	if(atoi(argv[2]) == 1) {
-		printf("[%f, ", *(a + 0));
-		for(i=1; i<(n-1); i++) {
-			printf("%f, ", *(a + i));
-		}
-		printf("%f]\n", *(a + n - 1));
-
-		printf("[%f, ", (float)*(index + 0));
-		for(i=1; i<(n-1); i++) {
-			printf("%f, ", (float)*(index + i));
-		}
-		printf("%f]\n", (float)*(index + n - 1));
-	}
+	t2 = omp_get_wtime();
+	//printf("Sort Completed \n");
+	Iall = &(I[0]);
+	Pv = &(Data[0]);
+	S = 1;
 	
-	// sort array (in parallel using Merge)
-	timeP1 = omp_get_wtime();
-	rank = sampleSort(a, index, n);
-	timeP2 = omp_get_wtime();
-	// check array
-	i=0;
-	while(*(a + i) <= *(a + i + 1) && i<n) {
-		i++;
+	//Tree building
+	t3 = omp_get_wtime();
+	tree_node* head = build_tree(n);
+	t4 = omp_get_wtime();
+	//printf("Time taken for sorting  = %f\n", t2 - t1);
+	//printf("Time taken to build the tree = %f\n", t4 - t3);
+	//printf("Total time taken = %f\n\n", t4 - t1);
+	printf("%d %d %f\n", atoi(argv[1]), omp_get_max_threads(),t4-t3);
+	//releasing dnamically allocated memory
+	delete_tree(head);
+	for(int i = 0; i < D; i++) {
+		free(I[i]);
+		free(Data[i]);
 	}
-	if(i==(n-1)) {
-		//printf("Par (Sample) :: Array sorted SUCCESSFULLY in %f seconds.\n", (timeP2-timeP1));
-	} else {
-		printf("Par (Sample) :: Array is NOT sorted.  See index %d.\n", i);
-	}
-
-	// if option is selected, print ending array
-	if(atoi(argv[3]) == 1) {
-		printf("[%f, ", *(a + 0));
-		for(i=1; i<(n-1); i++) {
-			printf("%f, ", *(a + i));
-		}
-		printf("%f]\n", *(a + n - 1));
-
-		printf("[%f, ", (float)*(index + 0));
-		for(i=1; i<(n-1); i++) {
-			printf("%f, ", (float)*(index + i));
-		}
-		printf("%f]\n", (float)*(index + n - 1));
-
-		printf("[%d, ", *(rank + 0));
-		for(i=1; i<(n-1); i++) {
-			printf("%d, ", *(rank + i));
-		}
-		printf("%d]\n", *(rank + n - 1));
-	}
-	
-	printf("%d, %d, %f, %f, %f\n", omp_get_num_threads(), n, (float)((n*sizeof(float))/1000000.0f), (timeS2-timeS1), (timeP2-timeP1));
 	return 0;
 }
+

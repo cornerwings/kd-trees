@@ -1,10 +1,13 @@
 #include "parSort.h"
 #include <math.h>
+#include <iostream>
+#include <omp.h>
 
+using namespace std;
 /**********************************************************
- * sample sort (returns rank) 
+ * sample sort (returns rank)
 /**********************************************************/
-int * sampleSort(float * a, int *index, int n) {
+void sampleSort(float * a, int *index, int n) {
 	int i, j, k, p, start, end, avg, split, * core, * coreCount, * newIndex;
 	float * splitters, * newA;
 	int * rank = (int *)malloc(sizeof(int) * n);
@@ -135,11 +138,13 @@ int * sampleSort(float * a, int *index, int n) {
 			*(rank + *(index + i)) = i;
 		}
 	}// END parallel region
+	
+	#pragma omp parallel for
+	for(i = 0; i < n; i++) {
+		*(index + i) = *(rank + i);
+	}
 
-	return rank;
 }
-
-
 
 /**********************************************************
  * sequential Shell Sorts
@@ -165,6 +170,7 @@ void seqShellSort(float *a, int *index, int n){
 		inc = (int)floor((inc / 2.2) + 0.5);
 	}
 }
+
 void seqShellSort(float *a, int n){
 	//printf("tid = %d, n = %d\n", omp_get_thread_num(), n);
 	int inc, i, j, k;
