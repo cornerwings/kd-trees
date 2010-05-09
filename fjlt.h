@@ -40,7 +40,7 @@ float* generatep(int n, int k, int d, float e, int p) ;
 /*
  * Generates Hadamard matrix
  */
-void generateh(float *data, int d);
+float* generateh(int d);
 
 /*
  * Generates diagnol matrix D

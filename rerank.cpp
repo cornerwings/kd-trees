@@ -2,6 +2,8 @@
 #include <limits.h>
 #include <omp.h>
 
+#include "rerank.h"
+
 int parallel_find_max (int* ranks, int size) {
 	int max = - INT_MAX;
 	int i;

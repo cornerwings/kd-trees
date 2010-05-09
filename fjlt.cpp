@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <cblas.h>
+#include <mkl.h>
 #include <fftw3.h>
 #include <omp.h>
+
+#include "fjlt.h"
 #include "io.h"
 
 /*
@@ -16,6 +18,7 @@ int count_bits(unsigned number) {
 		c++;
 		number &= number - 1; // clear the least significant bit set
 	}
+    return c;
 }
 
 
@@ -64,18 +67,18 @@ void randn(float *data, int m, int n) {
 
 	int i, j, k;
 
-	float pi = 4. * atan(1.);
+	float pi = 4 * atan(1);
 	float square, amp, angle;
 
 	k = 0;
 	for (i = 0; i < m; i++) {
 		for (j = 0; j < n; j++) {
 			if (k % 2 == 0) {
-				square = -2. * log(udata[k]);
-				if (square < 0.)
-					square = 0.;
+				square = -2 * log(udata[k]);
+				if (square < 0)
+					square = 0;
 				amp = sqrt(square);
-				angle = 2. * pi * udata[k + 1];
+				angle = 2 * pi * udata[k + 1];
 				data[i * n + j] = amp * sin(angle);
 			} else {
 				data[i * n + j] = amp * cos(angle);
@@ -129,7 +132,7 @@ void randn_mv(float *data, int m, int n, float mu, float var) {
  * We use Moro's Inverse CND approximation as there exists no
  * closed form solutions
  */
-float moroinv_cnd(float P){
+inline float moroinv_cnd(float P){
     const float a1 = 2.50662823884;
     const float a2 = -18.61500062529;
     const float a3 = 41.39119773534;
@@ -150,7 +153,9 @@ float moroinv_cnd(float P){
     float y, z;
 
     if(P <= 0 || P >= 1.0){
-        printf("MoroInvCND(): bad parameter %f\n", P);
+        //printf("MoroInvCND(): bad parameter %f\n", P);
+        //Caused by numerical instability of rand        
+        P = 0.9999;
     }
 
     y = P - 0.5;
@@ -215,7 +220,7 @@ float* generatep(int n, int k, int d, float e, int p) {
 	float *data = (float*) malloc(k * d * sizeof(float));
 	memset(data, 0, k * d * sizeof(float));
 
-	float q = exp(p - 2) * pow(log(n), p) / d;
+	float q = pow(e, p - 2) * pow(log(n), p) / d;
 	q = q < 1 ? q : 1;
 
     //printf("Value of q: %f\n", q);
@@ -255,7 +260,7 @@ float* generateh(int d) {
 
     float *data = (float*) malloc(d*d*sizeof(float));
 
-	float consmul = 1 / sqrt(d);
+	float consmul = 1 / (float)sqrt(d);
 
     #pragma omp parallel for shared(data)
 	for (int i = 0; i < d; i++) {
@@ -306,7 +311,7 @@ float* FJLT(float *input, int n, int k, int d) {
 	float *data = (float*) malloc(n * d * sizeof(float));
 	memcpy(data, input, n * d * sizeof(float));
 
-	float eps = sqrt(log(n) / k);
+	float eps = (float) sqrt(log(n) / k);
 
 	float *D;
 	D = generated(d);
@@ -321,7 +326,7 @@ float* FJLT(float *input, int n, int k, int d) {
 	result = (float*) malloc(n * k * sizeof(float));
 	memset(result, 0, k * n * sizeof(float));
 
-	float sqrtd = 1 / sqrt(d);
+	//float sqrtd = 1 / sqrt(d);
 
 	/*
 	 * Process each point at once i.e each column of data
@@ -336,13 +341,13 @@ float* FJLT(float *input, int n, int k, int d) {
 		int a, b, c;
 
 		for (a = 0; a < d; a++){
-            point[a] *= (/*sqrtd * */ D[a]);
+            point[a] *= D[a];
         }
 
 		/*
 		 * Do Fast Walsh transform on the point
 		 */
-		int l2 = log2(d);
+		int l2 = (int) log2(d);
 		for (a = 0; a < l2; a++) {
 			for (b = 0; b < (1 << l2); b += 1 << (a + 1)) {
 				for (c = 0; c < (1 << a); c++) {
@@ -380,7 +385,7 @@ float* FJLT(float *input, int n, int k, int d) {
 float* FJLT_fftw(float *data, int n, int k, int d) {
 
 	// k = e^-2 * log(n)
-	float eps = sqrt(log(n) / k);
+	float eps = (float) sqrt(log(n) / k);
 
 	float *D;
 	D = generated(d);
@@ -395,7 +400,7 @@ float* FJLT_fftw(float *data, int n, int k, int d) {
 	result = (float*) malloc(n * k * sizeof(float));
 	memset(result, 0, k * n * sizeof(float));
 
-	float sqrtd = 1 / sqrt(d);
+	//float sqrtd = 1 / sqrt(d);
 
     /*
      * Temp array of size d to copy from fftw_complex to float
@@ -435,7 +440,7 @@ float* FJLT_fftw(float *data, int n, int k, int d) {
         //cast from fftw_complex to float
         //TODO - Dont know any other way.. going with the normal copy
 	    for (i = 0; i < d; i++) {
-		    hdx[i] = out[i][0];
+		    hdx[i] = (float)out[i][0];
 	    }
 
 	    cblas_sgemv(CblasRowMajor, CblasNoTrans, k, d, (float)1/d, P, d, hdx, 1, 0.0, y, 1);

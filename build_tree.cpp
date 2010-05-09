@@ -2,29 +2,26 @@
 #include <limits>
 #include <float.h>
 #include <omp.h>
+
+#include <stdio.h>
+
+
+#include "rerank.h"
+#include "parSort.h"
+#include "build_tree.h"
+
+
 //#define TASKQ_DEPTH	3
-static int lol = 0;
-static double** Pv;
-static int** Iall;
-static int* flag;
-static int* aux_global; 
-static int* rerankspace;
-static int num_leaf_node = 0;
-static int S;
-static int D;
+int lol = 0;
+double** Pv;
+int** Iall;
+int* flag;
+int* aux_global; 
+int* rerankspace;
+int num_leaf_node = 0;
+int S;
+int D;
 
-typedef struct{
-	int* point_ids;
-	int size;
-}pts;
-
-typedef struct node {
-	struct node* left_child;
-	struct node* right_child;
-	struct node* parent;
-	int dimension;
-	pts* points;
-} tree_node;
 
 int select_dim( int* aux_global, int size, int D) {
 	int d;

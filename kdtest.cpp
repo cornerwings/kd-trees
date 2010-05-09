@@ -7,8 +7,6 @@
 #include <fstream>
 #include <cstring>
 
-#include "io.h"
-#include "fjlt.h"
 #include "parSort.h"
 #include "rerank.h"
 #include "build_tree.h"
@@ -28,24 +26,8 @@ int main(int argc, char *argv[]) {
 	}
 	int n = (int) pow(2,atoi(argv[1]));
 	D = (int) pow(2,atoi(argv[2]));
-
-    int K = D/8;
 	//printf("Size = %d, dimension = %d threads = %d\n", atoi(argv[1]), atoi(argv[2]), omp_get_max_threads());
 
-	float *init_data = (float*) malloc(n*D*sizeof(float));
-	memset(init_data, 0, n*D*sizeof(float));
-
-    for(int i=0; i<D; i++){
-        for(int j=0; j<n; j++){
-            init_data[i+D*j] = rand_float(-1,1);
-        }
-    }
-
-    float *result;
-    result = FJLT(init_data, n, K, D);
-
-    D = K;
-    
 	myRNG rng;
 	rng.resetSeed(10215);
 	double t1, t2, t3, t4;
@@ -55,14 +37,10 @@ int main(int argc, char *argv[]) {
 		double* t = (double*) malloc(n*sizeof(double));
 		//printf("Generating data for %d dimension\n",i);
 		for(int j = 0; j < n; j++) {
-			*(t + j) = result[i + j*D];
+			*(t + j) = rng.next();
 		}
 		Data[i] = t;
 	}
-
-
-    free(init_data);
-    free(result);
 
 	t1 = omp_get_wtime();
 	//Create index vectors for each dimension and do rank sort
