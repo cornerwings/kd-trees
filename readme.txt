@@ -1,3 +1,16 @@
+Overall build
+
+1. Type make
+2. Produces 3 executables: fjlt, kdtree, main
+
+3. fjlt - runs a FJLT transform on randomly 
+            generated nxd to nxk
+4. kdtree - builds a kd-tree from nxd dataset
+5. main - Generates random nxd data, and transforms it to nxk 
+            using FJLT and then builds the tree
+
+
+
 Parallel sort:
 
 To compile on Hogwarts:
@@ -30,3 +43,26 @@ To compile:
 
 2. As of now executable doesnt take any inputs.
    Just creates some data randomly and does the projections on those
+
+Building kd-tree
+
+Compiling:
+icc -openmp -openmp-task intel proj.cpp
+
+Executing:
+OMP_NUM_THREADS=<N> ./a.out n d
+where, N = number of openmp threads
+	   n = log of dataset size
+	   d = log of dimension size
+
+Example:
+OMP_NUM_THREADS=4 ./a.out 8 7
+
+The above command does:
+1. Generate a random data points of size 2^8. Each point will belong to a 2^7 dimension space.
+2. Run the program with 4 openmp threads
+
+IMPORTANT:
+It is important to compile the program as instructed above, because the program uses Intel task-queuing pragma
+to parallelize recursive functions. This is not a standard OpenMP feature and other compiles cannot compile the pragmas.
+If a different compiler is used, the pragmas will be ignored and the performance of the program will be badly affected.
